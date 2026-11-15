@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ЛУПЕР PRO</title>
+  <title>LOOPER PRO</title>
   <style>
     :root {
       --bg: #0c0c0c;
@@ -297,15 +297,15 @@
 </head>
 <body>
   <div id="start">
-    <h1>ЛУ<span>П</span>ЕР</h1>
-    <button id="startbtn" onclick="boot()">Включить микрофон</button>
+    <h1>LO<span>O</span>PER</h1>
+    <button id="startbtn" onclick="boot()">Enable Microphone</button>
     <div id="starterr"></div>
   </div>
 
   <div id="app">
     <div id="topbar">
-      <h1>ЛУ<span>П</span>ЕР</h1>
-      <button id="addtrackbtn" onclick="addTrack()">＋ Дорожка</button>
+      <h1>LO<span>O</span>PER</h1>
+      <button id="addtrackbtn" onclick="addTrack()">＋ Track</button>
     </div>
     <div id="tracks"></div>
   </div>
@@ -435,10 +435,10 @@
       var has = !!t.buf;
       var busy = t.state === 'recording' || t.state === 'overdubbing' || t.state === 'playing';
       var stateLabel = {
-        empty: 'ПУСТО',
+        empty: 'EMPTY',
         recording: 'REC',
         playing: 'PLAY',
-        stopped: 'СТОП',
+        stopped: 'STOP',
         overdubbing: 'OVERDUB'
       };
       var stateClass = {
@@ -460,8 +460,8 @@
       d.id = 't' + t.id;
       d.innerHTML =
         '<div class="track-head">' +
-          '<div class="track-num">Дорожка ' + t.id + '</div>' +
-          '<div class="track-dur" id="dur' + t.id + '">' + (has ? t.dur.toFixed(2) + ' с' : '—') + '</div>' +
+          '<div class="track-num">Track ' + t.id + '</div>' +
+          '<div class="track-dur" id="dur' + t.id + '">' + (has ? t.dur.toFixed(2) + ' sec' : '—') + '</div>' +
           '<div class="track-badge">' + stateLabel[t.state] + '</div>' +
         '</div>' +
         '<div class="wv"><canvas id="wc' + t.id + '" height="44"></canvas><div class="wv-ph" id="ph' + t.id + '"></div></div>' +
@@ -470,27 +470,27 @@
           '<input type="range" min="0" max="1.5" step="0.01" value="' + t.vol + '" oninput="setVol(' + t.id + ',this.value)">' +
           '<span id="vlbl' + t.id + '">' + Math.round(t.vol * 100) + '%</span>' +
         '</div>' +
-        '<div class="section"><div class="section-label">Запись</div>' +
+        '<div class="section"><div class="section-label">Recording</div>' +
           '<div class="grid g4">' +
-            btn('b-rec', 'startRec(' + t.id + ')', '⏺', 'Запись', { disabled: busy }) +
-            btn('b-over', 'startOver(' + t.id + ')', '⊕', 'Овердаб', { disabled: !has || busy }) +
-            btn('b-play', 'doPlay(' + t.id + ')', '▶', 'Плей', { disabled: !has || busy }) +
-            btn('b-stop', 'doStop(' + t.id + ')', '⏹', 'Стоп', { disabled: !busy }) +
+            btn('b-rec', 'startRec(' + t.id + ')', '⏺', 'Record', { disabled: busy }) +
+            btn('b-over', 'startOver(' + t.id + ')', '⊕', 'Overdub', { disabled: !has || busy }) +
+            btn('b-play', 'doPlay(' + t.id + ')', '▶', 'Play', { disabled: !has || busy }) +
+            btn('b-stop', 'doStop(' + t.id + ')', '⏹', 'Stop', { disabled: !busy }) +
           '</div></div>' +
-        '<div class="section"><div class="section-label">Редактирование</div>' +
+        '<div class="section"><div class="section-label">Edit</div>' +
           '<div class="grid g4">' +
-            btn('b-edit', 'doDouble(' + t.id + ')', '×2', 'Удвоить', { disabled: !has || busy }) +
-            btn('b-edit', 'doHalf(' + t.id + ')', '½', 'Половина', { disabled: !has || busy }) +
-            btn('b-edit', 'doReverse(' + t.id + ')', '⟵⟶', 'Реверс', { disabled: !has || busy }) +
-            btn('b-edit', 'doUndo(' + t.id + ')', '↩', 'Ундо', { disabled: !t.undoBuf || busy }) +
+            btn('b-edit', 'doDouble(' + t.id + ')', '×2', 'Double', { disabled: !has || busy }) +
+            btn('b-edit', 'doHalf(' + t.id + ')', '½', 'Half', { disabled: !has || busy }) +
+            btn('b-edit', 'doReverse(' + t.id + ')', '⟵⟶', 'Reverse', { disabled: !has || busy }) +
+            btn('b-edit', 'doUndo(' + t.id + ')', '↩', 'Undo', { disabled: !t.undoBuf || busy }) +
           '</div>' +
           '<div class="grid g4" style="margin-top:7px">' +
-            btn('b-edit', 'doPitch(' + t.id + ',1)', '↑', '+1 тон', { disabled: !has || busy }) +
-            btn('b-edit', 'doPitch(' + t.id + ',-1)', '↓', '−1 тон', { disabled: !has || busy }) +
-            btn('b-edit', 'doStretch(' + t.id + ')', '⇤⇥', 'Стретч', { disabled: !has || busy }) +
+            btn('b-edit', 'doPitch(' + t.id + ',1)', '↑', '+1 step', { disabled: !has || busy }) +
+            btn('b-edit', 'doPitch(' + t.id + ',-1)', '↓', '-1 step', { disabled: !has || busy }) +
+            btn('b-edit', 'doStretch(' + t.id + ')', '⇤⇥', 'Stretch', { disabled: !has || busy }) +
             btn('b-edit', 'doFade(' + t.id + ')', '〜', 'Fade', { disabled: !has || busy }) +
           '</div></div>' +
-        '<div class="section"><div class="section-label">Эффекты</div>' +
+        '<div class="section"><div class="section-label">Effects</div>' +
           '<div class="grid g3">' +
             btn('b-bloom', 'toggleBloom(' + t.id + ')', '🌸', 'Bloom', { disabled: !has, lit: t.bloomOn, id: 'bbtn' + t.id }) +
             btn('b-scatter', 'toggleScatter(' + t.id + ')', '✦', 'Scatter', { disabled: !has, lit: t.scatterOn, id: 'sbtn' + t.id }) +
@@ -501,15 +501,15 @@
             btn('b-stutter', 'toggleStutter(' + t.id + ')', '▪▪▪', 'Stutter', { disabled: !has, lit: t.stutterOn, id: 'stbtn' + t.id }) +
           '</div>' +
           '<div class="fx-panel" style="margin-top:7px">' +
-            fxRow(t, 'bloomSize', '🌸 Размер зерна', 0.05, 0.8, 'ms', t.fx.bloomSize) +
-            fxRow(t, 'bloomDen', '🌸 Плотность', 1, 20, '', t.fx.bloomDen) +
-            fxRow(t, 'scatterSpread', '✦ Питч разброс (ст)', 0, 24, ' ст', t.fx.scatterSpread) +
-            fxRow(t, 'scatterDen', '✦ Плотность', 2, 40, '', t.fx.scatterDen) +
-            fxRow(t, 'stutterRate', '▪ Stutter /с', 2, 32, '/с', t.fx.stutterRate) +
-            fxRow(t, 'stretchFactor', '⇤ Стретч ×', 1.5, 8, '×', t.fx.stretchFactor, true) +
+            fxRow(t, 'bloomSize', '🌸 Grain size', 0.05, 0.8, 'ms', t.fx.bloomSize) +
+            fxRow(t, 'bloomDen', '🌸 Density', 1, 20, '', t.fx.bloomDen) +
+            fxRow(t, 'scatterSpread', '✦ Pitch spread', 0, 24, ' st', t.fx.scatterSpread) +
+            fxRow(t, 'scatterDen', '✦ Density', 2, 40, '', t.fx.scatterDen) +
+            fxRow(t, 'stutterRate', '▪ Stutter /s', 2, 32, '/s', t.fx.stutterRate) +
+            fxRow(t, 'stretchFactor', '⇤ Stretch ×', 1.5, 8, '×', t.fx.stretchFactor, true) +
           '</div></div>' +
         '<div class="section">' +
-          btn('b-del', 'delTrack(' + t.id + ')', '🗑', 'Удалить дорожку', {}) +
+          btn('b-del', 'delTrack(' + t.id + ')', '🗑', 'Delete Track', {}) +
         '</div>' +
         '<div class="track-pad"></div>';
 
@@ -975,8 +975,8 @@
       var lbl = document.getElementById(lblId);
       if (!lbl) return;
       if (key === 'bloomSize') lbl.textContent = Math.round(val * 1000) + 'ms';
-      else if (key === 'scatterSpread') lbl.textContent = '±' + val + ' ст';
-      else if (key === 'stutterRate') lbl.textContent = val + '/с';
+      else if (key === 'scatterSpread') lbl.textContent = '±' + val + ' st';
+      else if (key === 'stutterRate') lbl.textContent = val + '/s';
       else if (key === 'stretchFactor') lbl.textContent = '×' + parseFloat(val).toFixed(1);
       else lbl.textContent = val;
 
@@ -1030,7 +1030,7 @@
       }
       cx.stroke();
       var d = document.getElementById('dur' + t.id);
-      if (d) d.textContent = t.dur.toFixed(2) + ' с';
+      if (d) d.textContent = t.dur.toFixed(2) + ' sec';
     }
   </script>
 </body>
