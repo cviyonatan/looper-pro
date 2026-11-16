@@ -788,12 +788,21 @@ function ensureProc(t){
   var mid=AC.createBiquadFilter(); mid.type='peaking'; mid.frequency.value=1000; mid.Q.value=0.8; mid.gain.value=t.eq.mid;
   var high=AC.createBiquadFilter(); high.type='highshelf'; high.frequency.value=5000; high.gain.value=t.eq.high;
   var outG=AC.createGain(); outG.gain.value=t.vol;
-  /* signal chain: proc → low → mid → high → outG → destination
-     FX tap from outG (after EQ, pre-destination) */
-  micSrc.connect(proc,0,0);
-  proc.connect(low); low.connect(mid); mid.connect(high); high.connect(outG);
+  /* Split stereo proc into two mono chains, each going through its own EQ copy,
+     so both channels are processed. ch0=L, ch1=R each get identical EQ.
+     signal chain: proc → splitter → [low/mid/high per channel] → outG → destination */
+  var splitter=AC.createChannelSplitter(2);
+  var lowR=AC.createBiquadFilter(); lowR.type='lowshelf'; lowR.frequency.value=180; lowR.gain.value=t.eq.low;
+  var midR=AC.createBiquadFilter(); midR.type='peaking'; midR.frequency.value=1000; midR.Q.value=0.8; midR.gain.value=t.eq.mid;
+  var highR=AC.createBiquadFilter(); highR.type='highshelf'; highR.frequency.value=5000; highR.gain.value=t.eq.high;
+  var chanMerger=AC.createChannelMerger(2);
+  proc.connect(splitter);
+  splitter.connect(low,0);   low.connect(mid);   mid.connect(high);   high.connect(chanMerger,0,0);
+  splitter.connect(lowR,1);  lowR.connect(midR); midR.connect(highR); highR.connect(chanMerger,0,1);
+  chanMerger.connect(outG);
   outG.connect(AC.destination);
-  t.eq.nodes=[low,mid,high];
+  micSrc.connect(proc,0,0);
+  t.eq.nodes=[low,mid,high,lowR,midR,highR];
   t.proc=proc; t.micSrc=micSrc; t.outGain=outG;
 
   function panCoeff(pan){
@@ -1244,11 +1253,12 @@ function setEQ(id, band, val){
   var lblEl=document.getElementById('eq'+band+id);
   if(lblEl) lblEl.textContent=val.toFixed(1)+' dB';
   if(!t.eq.nodes||!t.eq.nodes.length) return;
-  var node;
-  if(band==='low')  node=t.eq.nodes[0];
-  if(band==='mid')  node=t.eq.nodes[1];
-  if(band==='high') node=t.eq.nodes[2];
-  if(node) node.gain.value=val;
+  var idxL, idxR;
+  if(band==='low')  { idxL=0; idxR=3; }
+  if(band==='mid')  { idxL=1; idxR=4; }
+  if(band==='high') { idxL=2; idxR=5; }
+  if(idxL!=null && t.eq.nodes[idxL]) t.eq.nodes[idxL].gain.value=val;
+  if(idxR!=null && t.eq.nodes[idxR]) t.eq.nodes[idxR].gain.value=val;
 }
 
 /* ══ CROP ══ */
