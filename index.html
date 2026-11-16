@@ -825,12 +825,18 @@ function ensureProc(t){
 
     if(t.state==='multiplying'){
       var base=t.multLen;
+      var writeStart=t.multWriteStart||base;
       for(var m=0;m<n;m++){
+        /* read: original cycle loops underneath */
         var read=wrap(t.pos,base);
-        var sample=lerp(buf,read,base);
-        outL[m]=sample; outR[m]=sample;
-        var write=base+t.multRecPos;
-        if(write<buf.length) buf[write]=inp[m];
+        var sample=lerp(buf,read,base)*t.feedback;
+        /* mix in live input */
+        var inSamp=Math.max(-1,Math.min(1,inp[m]*t.inputGain));
+        var write=writeStart+t.multRecPos;
+        if(write<buf.length){
+          buf[write]=Math.max(-1,Math.min(1,sample+inSamp));
+        }
+        outL[m]=sample+inSamp; outR[m]=sample+inSamp;
         t.multRecPos++;
         t.pos=wrap(t.pos+rate,base);
       }
@@ -993,14 +999,18 @@ function doMultiply(id){
   var t=getT(id); if(!t) return;
   if(t.state!=='playing'&&t.state!=='stopped') return;
   if(!t.buf||!t.loopLen||!t.multLen) return;
-  var base=t.multLen;
-  var newLen=t.loopLen+base;
-  if(newLen>Math.round(t.maxSec*AC.sampleRate)) return; // cap
-  /* grow buffer */
-  var newBuf=new Float32Array(newLen);
+  var maxSamp=Math.round(t.maxSec*AC.sampleRate);
+  if(t.loopLen>=maxSamp) return; // already at cap
+  /* save undo snapshot of current loop before extending */
+  t.undoSnap=t.buf.slice(0,t.loopLen);
+  t._preMultLoopLen=t.loopLen;
+  t._preMultCount=t.multCount;
+  /* allocate max buffer — will be trimmed to nearest cycle on close */
+  var newBuf=new Float32Array(maxSamp);
   newBuf.set(t.buf.subarray(0,t.loopLen));
   t.buf=newBuf;
   t.multRecPos=0;
+  t.multWriteStart=t.loopLen; // where new recording begins
   t.state='multiplying';
   t.multCount++;
   t.pos=0;
@@ -1009,9 +1019,12 @@ function doMultiply(id){
 
 function closeMult(t){
   var base=t.multLen;
-  var newLoopLen=base*t.multCount;
-  /* if less than a full segment was recorded, still keep the structure */
-  t.loopLen=Math.min(newLoopLen, t.buf.length);
+  /* round recorded length UP to nearest full cycle */
+  var recorded=t.multWriteStart+(t.multRecPos||0);
+  var cycles=Math.max(1, Math.ceil((recorded - t.multWriteStart) / base));
+  t.multCount=t._preMultCount + cycles;
+  var newLoopLen=Math.min(base*t.multCount, t.buf.length);
+  t.loopLen=newLoopLen;
   t.dur=t.loopLen/AC.sampleRate;
   t.snap=t.buf.slice(0,t.loopLen);
   t.pos=0;
@@ -1110,15 +1123,17 @@ function doStop(id){
     renderTrack(t); return;
   }
   if(t.state==='multiplying'){
-    /* abort multiply — restore to previous loop */
-    t.buf=t.buf.subarray?t.buf.slice(0,t.multLen):t.buf;
-    t.loopLen=t.multLen;
+    /* abort multiply — restore to loop as it was before multiply started */
+    var restoreLen=t._preMultLoopLen||t.multLen;
+    t.buf=t.buf.slice(0,restoreLen);
+    t.loopLen=restoreLen;
     t.dur=t.loopLen/AC.sampleRate;
     t.snap=t.buf.slice(0,t.loopLen);
-    t.multCount=Math.max(1,t.multCount-1);
-    t.state='stopped';
-    cancelAnimationFrame(t.raf);
-    renderTrack(t); drawWave(t); return;
+    t.multCount=t._preMultCount||Math.max(1,t.multCount-1);
+    t.pos=0;
+    t.heads.forEach(function(h){ h.pos=0; h.phanim=0; });
+    t.state='playing'; t.phStart=AC.currentTime;
+    renderTrack(t); drawWave(t); startPH(t); return;
   }
   if(t.state==='playing'||t.state==='overdubbing'){
     if(t.buf&&t.loopLen) t.snap=t.buf.slice(0,t.loopLen);
@@ -1620,9 +1635,9 @@ function renderTrack(t){
       '<div class="sl" style="margin-top:2px">MULTIPLY</div>'+
       '<div class="mult-row">'+
         '<button class="btn-mult" '+
-          (!has||(t.state!=='playing'&&t.state!=='stopped')?'disabled':'')+
-          ' onclick="doMultiply('+id+')">'+
-          '<i>⊞</i><s>MULTIPLY ×'+(t.multCount+1)+'</s>'+
+          (!has||(t.state!=='playing'&&t.state!=='stopped'&&t.state!=='multiplying')?'disabled':'')+
+          ' onclick="'+(t.state==='multiplying'?'doMain('+id+')':'doMultiply('+id+')')+'">'+
+          '<i>⊞</i><s>'+(t.state==='multiplying'?'CLOSE MULTIPLY':'MULTIPLY LOOP')+'</s>'+
         '</button>'+
         '<div class="fxcell" style="flex:1;padding:7px 9px">'+
           '<div class="fxslrow">'+
