@@ -957,6 +957,9 @@ function closeLoop(t){
   t.reversed=false;
   /* init heads positions */
   t.heads.forEach(function(h){ h.pos=0; h._jc=0; });
+  /* restart snapshot FX with new audio */
+  if(t.gran.on) startGran(t);
+  if(t.drone.on){ t.drone.arr.forEach(function(s){try{s.stop();}catch(e){}); t.drone.arr=[]; t.drone.on=false; toggleDrone(t.id); }
   /* reset scatter */
   t.scatter.nextJump=Math.round(AC.sampleRate*t.scatter.interval);
   t.scatter.xfading=false;
@@ -1040,6 +1043,8 @@ function closeMult(t){
   t.state='playing'; t.phStart=AC.currentTime;
   t.scatter.nextJump=Math.round(AC.sampleRate*t.scatter.interval);
   t.scatter.xfading=false;
+  if(t.gran.on) startGran(t);
+  if(t.drone.on){ t.drone.arr.forEach(function(s){try{s.stop();}catch(e){}); t.drone.arr=[]; t.drone.on=false; toggleDrone(t.id); }
   renderTrack(t); drawWave(t); startPH(t);
 }
 
@@ -1219,6 +1224,14 @@ function applyEdit(t, newArr, keepUndo){
   t.cropStart=0; t.cropEnd=1;
   t.reversed=false;
   t.heads.forEach(function(h){ h.pos=0; h.phanim=0; h.pingDir=1; });
+  /* restart snapshot-based FX with fresh audio */
+  if(t.gran.on) startGran(t);
+  if(t.drone.on){
+    t.drone.arr.forEach(function(s){try{s.stop();}catch(e){}});
+    t.drone.arr=[];
+    t.drone.on=false;
+    toggleDrone(t.id); // restarts with new snap
+  }
   renderTrack(t); drawWave(t);
 }
 function doReverse(id){
